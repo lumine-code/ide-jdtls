@@ -102,10 +102,24 @@ liveSuite("ide-java actual editor routing", () => {
       (await main.provideHoverSignature().getSignature(editor, point("doubleValue(3)", 12)))
         .signatures[0].label,
     ).toContain("value");
+    const references = (
+      await main.provideFindReferences().findReferences(editor, point("doubleValue(3)"))
+    ).references;
+    // The call resolves to Calculator's concrete override; the separate
+    // protocol test queries the interface and includes its implementers.
     expect(
-      (await main.provideFindReferences().findReferences(editor, point("doubleValue(3)")))
-        .references.length,
-    ).toBeGreaterThanOrEqual(3);
+      references.some(
+        ({ path, range }) => path === fixture.filePath && range[0][0] === 5 && range[0][1] === 12,
+      ),
+    ).toBe(true);
+    expect(
+      references.some(
+        ({ path, range }) =>
+          path === fixture.filePath &&
+          range[0][0] === 6 &&
+          range[0][1] === position(fixture.text, "doubleValue(3)", 0).character,
+      ),
+    ).toBe(true);
     const renamed = await main
       .provideRefactor()
       .rename(editor, point("doubleValue(3)"), "twice", { dryRun: true });
