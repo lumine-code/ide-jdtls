@@ -50,6 +50,21 @@ describe("ide-java server discovery and installation", () => {
     fs.mkdirSync(path.join(fixture.rootPath, "java"));
     expect(server.findOnPath("java", { PATH: fixture.rootPath })).toBeNull();
   });
+  it("continues past an older Java on PATH to a supported runtime", async () => {
+    const oldDirectory = path.join(fixture.rootPath, "old"),
+      newDirectory = path.join(fixture.rootPath, "new");
+    const name = process.platform === "win32" ? "java.exe" : "java";
+    for (const directory of [oldDirectory, newDirectory]) {
+      fs.mkdirSync(directory);
+      fs.copyFileSync(process.execPath, path.join(directory, name));
+    }
+    spyOn(server, "javaMajorVersion").and.callFake(async (command) =>
+      command.startsWith(oldDirectory) ? 17 : 21,
+    );
+    expect(
+      await server.resolveJava("", { PATH: `${oldDirectory}${path.delimiter}${newDirectory}` }),
+    ).toBe(path.join(newDirectory, name));
+  });
   it("prefers an explicit distribution, then managed, then JDTLS_HOME", async () => {
     const explicit = path.join(fixture.rootPath, "explicit"),
       managed = path.join(fixture.rootPath, "managed"),
