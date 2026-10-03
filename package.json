@@ -1,0 +1,231 @@
+{
+  "name": "ide-java",
+  "author": "lumine-code",
+  "description": "Provide Java language features with Eclipse JDT Language Server.",
+  "repository": "https://github.com/lumine-code/ide-java",
+  "bugs": {
+    "url": "https://github.com/lumine-code/ide-java/issues"
+  },
+  "keywords": [
+    "jdtls",
+    "eclipse",
+    "maven",
+    "gradle",
+    "language-server",
+    "lsp",
+    "refactoring"
+  ],
+  "version": "1.0.0",
+  "license": "MIT",
+  "engines": {
+    "lumine": "^1.0.0"
+  },
+  "main": "./lib/main",
+  "files": [
+    "lib",
+    "spec"
+  ],
+  "scripts": {
+    "test": "lumine --test spec",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "consumedServices": {
+    "ide-client": {
+      "versions": {
+        "^1.0.0": "consumeIdeClient"
+      }
+    }
+  },
+  "providedServices": {
+    "background-tips.provider": {
+      "versions": {
+        "1.0.0": "provideBackgroundTips"
+      }
+    }
+  },
+  "specPackages": [
+    "ide-client",
+    "language-java"
+  ],
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.12.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-n": "^18.4.1",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "vscode-jsonrpc": "^9.0.3"
+  },
+  "configSchema": {
+    "serverDirectory": {
+      "title": "Server Directory",
+      "description": "Absolute path to the extracted JDT LS distribution containing plugins and config directories. Leave empty to use the managed installation, then JDTLS_HOME or a system installation.",
+      "type": "string",
+      "default": ""
+    },
+    "javaPath": {
+      "title": "Java Path",
+      "description": "Absolute path to a Java 21 or newer java executable. Leave empty to use JDK_HOME, JAVA_HOME, then PATH. Project build runtimes stay controlled by the project.",
+      "type": "string",
+      "default": ""
+    },
+    "maxHeap": {
+      "title": "Maximum Heap",
+      "description": "Maximum memory in MiB for each Java language server.",
+      "type": "integer",
+      "minimum": 256,
+      "default": 1024
+    },
+    "notifyWhenMissing": {
+      "title": "Notify When Missing",
+      "description": "Offer to install JDT LS when its server or a supported Java runtime cannot be found.",
+      "type": "boolean",
+      "default": true
+    },
+    "features": {
+      "title": "Features",
+      "description": "Which JDT LS features the editor uses. Reference lenses need a client command that the editor does not execute.",
+      "type": "object",
+      "scopeResolution": "grammar",
+      "properties": {
+        "diagnostics": {
+          "title": "Diagnostics",
+          "description": "Report compiler errors and warnings.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "autocomplete": {
+          "title": "Autocomplete",
+          "description": "Complete Java names, methods and imports.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "hover": {
+          "title": "Hover",
+          "description": "Show Java types and documentation.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "signature": {
+          "title": "Signature Help",
+          "description": "Show method parameters while entering arguments.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "definition": {
+          "title": "Go To Definition",
+          "description": "Navigate to project declarations, types and implementations.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "references": {
+          "title": "Find References",
+          "description": "Find symbol uses across the project.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "callHierarchy": {
+          "title": "Call Hierarchy",
+          "description": "Navigate methods and their callers.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "typeHierarchy": {
+          "title": "Type Hierarchy",
+          "description": "Navigate classes, interfaces and their inheritance.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "symbols": {
+          "title": "Symbols",
+          "description": "Find document and project symbols.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "format": {
+          "title": "Format",
+          "description": "Format Java files and selections.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "rename": {
+          "title": "Rename",
+          "description": "Rename Java symbols across the project.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "codeActions": {
+          "title": "Code Actions",
+          "description": "Apply compiler fixes and refactorings.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "inlayHints": {
+          "title": "Inlay Hints",
+          "description": "Show parameter names inline.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "semanticTokens": {
+          "title": "Semantic Tokens",
+          "description": "Classify Java symbols using semantic information.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        }
+      },
+      "default": {}
+    },
+    "parameterHints": {
+      "title": "Parameter Hints",
+      "description": "Show hints for literal arguments, all arguments, or none. Server Default preserves JDT LS settings.",
+      "type": "string",
+      "enum": [
+        "server-default",
+        "literals",
+        "all",
+        "none"
+      ],
+      "default": "server-default"
+    },
+    "buildConfigurationUpdates": {
+      "title": "Build Configuration Updates",
+      "description": "How JDT LS reacts to changed Maven or Gradle build configuration. Server Default preserves its policy.",
+      "type": "string",
+      "enum": [
+        "server-default",
+        "automatic",
+        "interactive",
+        "disabled"
+      ],
+      "default": "server-default"
+    },
+    "formatterProfileUrl": {
+      "title": "Formatter Profile URL",
+      "description": "Absolute file URL or HTTPS URL for an Eclipse formatter XML profile. Leave empty for the server default.",
+      "type": "string",
+      "default": ""
+    },
+    "formatterProfile": {
+      "title": "Formatter Profile",
+      "description": "Profile name inside the configured formatter XML. Leave empty to let JDT LS select it.",
+      "type": "string",
+      "default": ""
+    }
+  }
+}

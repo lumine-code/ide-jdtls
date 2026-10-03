@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Checks on ${{ matrix.os }} (Node 24)
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm audit --audit-level=high
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm pack --dry-run
+
+  integration:
+    name: Real JDT LS and Lumine integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      LUMINE_JASMINE_REPORTER: list
+      LUMINE_TEST_PACKAGES: ide-client language-java
+      JDTLS_VERSION: 1.61.0
+      REQUIRE_JDTLS: 1
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: ide-java
+      - uses: actions/checkout@v7
+        with:
+          repository: lumine-code/lumine
+          path: lumine
+      - uses: actions/checkout@v7
+        with:
+          repository: lumine-code/ide-client
+          path: ide-client
+      - uses: actions/checkout@v7
+        with:
+          repository: lumine-code/language-java
+          path: language-java
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: lumine/.nvmrc
+          cache: npm
+          cache-dependency-path: lumine/package-lock.json
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21.0.12.1"
+      - name: Install the exact checksum-verified JDT LS milestone
+        run: |
+          mkdir "$GITHUB_WORKSPACE/jdtls"
+          curl --fail --location --retry 3 --output jdtls.tar.gz https://download.eclipse.org/jdtls/milestones/1.61.0/jdt-language-server-1.61.0-202609031315.tar.gz
+          echo "338e7e73d61836651ba2453919a0d34fa763eb4e7c03342092309bffb8934c64  jdtls.tar.gz" | sha256sum --check
+          tar -xzf jdtls.tar.gz -C "$GITHUB_WORKSPACE/jdtls"
+          echo "JDTLS_HOME=$GITHUB_WORKSPACE/jdtls" >> "$GITHUB_ENV"
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update || true
+          sudo apt-get install -y xvfb libx11-dev libxkbfile-dev libsecret-1-dev
+      - name: Use HTTPS for public Git dependencies
+        run: git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
+      - name: Install adapter dependencies
+        working-directory: ide-java
+        run: npm ci --ignore-scripts
+      - name: Install client dependencies
+        working-directory: ide-client
+        run: npm ci --ignore-scripts
+      - name: Install editor dependencies
+        working-directory: lumine
+        run: |
+          install() { npm ci --ignore-scripts; }
+          install || install || install
+      - name: Prepare Electron
+        working-directory: lumine
+        run: |
+          node node_modules/electron/install.js
+          npm run build
+      - name: Link editor service packages
+        run: |
+          echo "LUMINE_HOME=$GITHUB_WORKSPACE/.test-home" >> "$GITHUB_ENV"
+          mkdir -p "$GITHUB_WORKSPACE/.test-home/packages"
+          ln -s "$GITHUB_WORKSPACE/ide-client" "$GITHUB_WORKSPACE/.test-home/packages/ide-client"
+          ln -s "$GITHUB_WORKSPACE/language-java" "$GITHUB_WORKSPACE/.test-home/packages/language-java"
+      - name: Run Jasmine specs against the real editor and server
+        working-directory: lumine
+        timeout-minutes: 25
+        run: xvfb-run --auto-servernum npm start -- --dev --test ../ide-java/spec
