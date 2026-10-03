@@ -213,6 +213,7 @@ describe("ide-java service edges and settings", () => {
         signatureHelp: { enabled: true },
         referencesCodeLens: { enabled: false },
         implementationCodeLens: "none",
+        format: { onType: { enabled: true } },
       },
     });
     expect(adapter.getWorkspaceConfiguration("java.configuration")).toBeUndefined();

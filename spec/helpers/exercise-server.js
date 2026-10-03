@@ -98,6 +98,27 @@ const exerciseServer = async (client, fixture) => {
       })
     ).length > 0,
   );
+  check(
+    "range formatting",
+    (
+      await client.request("textDocument/rangeFormatting", {
+        ...document,
+        range: { start: { line: 4, character: 0 }, end: { line: 8, character: 1 } },
+        options: { tabSize: 4, insertSpaces: true },
+      })
+    ).length > 0,
+  );
+  check(
+    "on-type formatting",
+    (
+      await client.request("textDocument/onTypeFormatting", {
+        ...document,
+        position: position(fixture.text, "return value * 2;", 16),
+        ch: ";",
+        options: { tabSize: 4, insertSpaces: true },
+      })
+    ).length > 0,
+  );
   const actions = await client.request("textDocument/codeAction", {
     ...document,
     range: diagnostics.find(({ message }) => message.includes("missingName")).range,
