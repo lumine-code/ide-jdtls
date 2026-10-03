@@ -46,7 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          path: ide-java
+          path: ide-jdtls
       - uses: actions/checkout@v7
         with:
           repository: lumine-code/lumine
@@ -82,7 +82,7 @@ jobs:
       - name: Use HTTPS for public Git dependencies
         run: git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
       - name: Install adapter dependencies
-        working-directory: ide-java
+        working-directory: ide-jdtls
         run: npm ci --ignore-scripts
       - name: Install client dependencies
         working-directory: ide-client
@@ -106,4 +106,4 @@ jobs:
       - name: Run Jasmine specs against the real editor and server
         working-directory: lumine
         timeout-minutes: 25
-        run: xvfb-run --auto-servernum npm start -- --dev --test ../ide-java/spec
+        run: xvfb-run --auto-servernum npm start -- --dev --test ../ide-jdtls/spec

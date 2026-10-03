@@ -17,7 +17,7 @@ const until = async (check, label) => {
   throw new Error(`${label} timed out`);
 };
 
-liveSuite("ide-java actual editor routing", () => {
+liveSuite("ide-jdtls actual editor routing", () => {
   let fixture, editor, paths, service, timeout, published, subscription;
   beforeAll(() => {
     timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
@@ -31,10 +31,10 @@ liveSuite("ide-java actual editor routing", () => {
     fixture = createProject();
     paths = lumine.project.getPaths();
     published = [];
-    lumine.config.set("ide-java.serverDirectory", serverDirectory);
-    lumine.config.set("ide-java.javaPath", javaPath);
-    lumine.config.set("ide-java.parameterHints", "all");
-    for (const name of ["language-java", "ide-client", "ide-java"])
+    lumine.config.set("ide-jdtls.serverDirectory", serverDirectory);
+    lumine.config.set("ide-jdtls.javaPath", javaPath);
+    lumine.config.set("ide-jdtls.parameterHints", "all");
+    for (const name of ["language-java", "ide-client", "ide-jdtls"])
       await lumine.packages.activatePackage(name);
     service = lumine.packages.getActivePackage("ide-client").mainModule.provideIdeClient();
     subscription = service.onDidPublishDiagnostics((value) => published.push(value));
@@ -45,7 +45,7 @@ liveSuite("ide-java actual editor routing", () => {
   afterEach(async () => {
     subscription.dispose();
     editor?.destroy();
-    for (const name of ["ide-java", "ide-client", "language-java"])
+    for (const name of ["ide-jdtls", "ide-client", "language-java"])
       await lumine.packages.deactivatePackage(name);
     for (const key of [
       "serverDirectory",
@@ -55,7 +55,7 @@ liveSuite("ide-java actual editor routing", () => {
       "features.hover",
       "features.diagnostics",
     ])
-      lumine.config.unset(`ide-java.${key}`);
+      lumine.config.unset(`ide-jdtls.${key}`);
     lumine.project.setPaths(paths);
     await lumine.fileWatchClient.settlePendingTeardown();
     removeProject(fixture.rootPath);
@@ -64,7 +64,7 @@ liveSuite("ide-java actual editor routing", () => {
     until(
       async () =>
         (await service.activeSessionsForEditor(editor)).find(
-          ({ adapter }) => adapter.id === "ide-java",
+          ({ adapter }) => adapter.id === "ide-jdtls",
         ),
       "Java session",
     );
@@ -135,10 +135,10 @@ liveSuite("ide-java actual editor routing", () => {
     expect((await main.provideSemanticTokens().semanticTokens(editor)).length).toBeGreaterThan(0);
     const formatter = main.provideCodeFormatFile();
     expect((await formatter.formatEntireFile(editor)).length).toBeGreaterThan(0);
-    lumine.config.set("ide-java.features.format", false);
+    lumine.config.set("ide-jdtls.features.format", false);
     expect(await service.activeSessionForFeature(editor, "textDocument/formatting")).toBeNull();
     expect(await formatter.formatEntireFile(editor)).toEqual([]);
-    lumine.config.set("ide-java.features.hover", false);
+    lumine.config.set("ide-jdtls.features.hover", false);
     expect(await main.provideHover().hover(editor, point("doubleValue(3)"))).toBeNull();
     expect(service.featureEnabled(session.adapter, "codeLens", editor)).toBe(false);
     const actions = await main
@@ -151,15 +151,15 @@ liveSuite("ide-java actual editor routing", () => {
   });
   it("stops the discarded generation and serves the editor through a new module after unload", async () => {
     const previous = await sessionFor(),
-      oldPackage = lumine.packages.getActivePackage("ide-java"),
+      oldPackage = lumine.packages.getActivePackage("ide-jdtls"),
       oldMain = oldPackage.mainModule,
       packagePath = oldPackage.path;
-    await lumine.packages.deactivatePackage("ide-java");
+    await lumine.packages.deactivatePackage("ide-jdtls");
     await until(() => previous.state === "stopped", "Java teardown");
     expect(service.adaptersForEditor(editor)).toEqual([]);
-    await lumine.packages.unloadPackage("ide-java");
+    await lumine.packages.unloadPackage("ide-jdtls");
     await lumine.packages.loadPackage(packagePath);
-    const current = (await lumine.packages.activatePackage("ide-java")).mainModule;
+    const current = (await lumine.packages.activatePackage("ide-jdtls")).mainModule;
     expect(current).not.toBe(oldMain);
     const renewed = await sessionFor();
     expect(renewed).not.toBe(previous);

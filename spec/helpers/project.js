@@ -4,7 +4,9 @@ const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 
 const createProject = () => {
-  const temporaryRoot = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), "ide-java-"));
+  const temporaryRoot = fs.mkdtempSync(
+    path.join(fs.realpathSync.native(os.tmpdir()), "ide-jdtls-"),
+  );
   const rootPath = path.join(temporaryRoot, "project");
   const source = path.join(rootPath, "src", "sample");
   fs.mkdirSync(source, { recursive: true });
@@ -39,7 +41,7 @@ public class Calculator implements Adder {
 const removeProject = (rootPath) => {
   const parent = fs.realpathSync.native(os.tmpdir());
   const target = path.dirname(path.resolve(rootPath));
-  if (path.dirname(target) !== parent || !path.basename(target).startsWith("ide-java-"))
+  if (path.dirname(target) !== parent || !path.basename(target).startsWith("ide-jdtls-"))
     throw new Error(`Refusing to remove a non-test directory: ${target}`);
   fs.rmSync(target, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
 };

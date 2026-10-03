@@ -1,13 +1,13 @@
 {
-  "name": "ide-java",
+  "name": "ide-jdtls",
   "author": "lumine-code",
   "description": "Provide Java language features with Eclipse JDT Language Server.",
-  "repository": "https://github.com/lumine-code/ide-java",
+  "repository": "https://github.com/lumine-code/ide-jdtls",
   "bugs": {
-    "url": "https://github.com/lumine-code/ide-java/issues"
+    "url": "https://github.com/lumine-code/ide-jdtls/issues"
   },
   "keywords": [
-    "jdtls",
+    "java",
     "eclipse",
     "maven",
     "gradle",

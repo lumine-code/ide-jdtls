@@ -13,7 +13,7 @@ if (process.env.REQUIRE_JDTLS && (!serverDirectory || !javaPath))
   throw new Error("CI requires a real JDT LS distribution and Java runtime.");
 const liveSuite = serverDirectory && javaPath ? describe : () => {};
 
-liveSuite("ide-java real JDT LS protocol", () => {
+liveSuite("ide-jdtls real JDT LS protocol", () => {
   let fixture, client, adapter, edge, timeout;
   beforeAll(() => {
     timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
@@ -25,10 +25,10 @@ liveSuite("ide-java real JDT LS protocol", () => {
   beforeEach(async () => {
     jasmine.useRealClock();
     fixture = createProject();
-    const main = (await lumine.packages.activatePackage("ide-java")).mainModule;
-    lumine.config.set("ide-java.serverDirectory", serverDirectory);
-    lumine.config.set("ide-java.javaPath", javaPath);
-    lumine.config.set("ide-java.parameterHints", "all");
+    const main = (await lumine.packages.activatePackage("ide-jdtls")).mainModule;
+    lumine.config.set("ide-jdtls.serverDirectory", serverDirectory);
+    lumine.config.set("ide-jdtls.javaPath", javaPath);
+    lumine.config.set("ide-jdtls.parameterHints", "all");
     edge = main.consumeIdeClient({
       registerAdapter(value) {
         adapter = value;
@@ -41,8 +41,8 @@ liveSuite("ide-java real JDT LS protocol", () => {
     await client.stop();
     edge.dispose();
     for (const key of ["serverDirectory", "javaPath", "parameterHints"])
-      lumine.config.unset(`ide-java.${key}`);
-    await lumine.packages.deactivatePackage("ide-java");
+      lumine.config.unset(`ide-jdtls.${key}`);
+    await lumine.packages.deactivatePackage("ide-jdtls");
     removeProject(fixture.rootPath);
   });
   it("returns usable intelligence, edits, hints, tokens and dynamic hierarchies", async () => {
@@ -70,7 +70,7 @@ liveSuite("ide-java real JDT LS protocol", () => {
       { storageRoot: path.join(fixture.configDirPath, "managed") },
     );
     try {
-      const record = await managed.install("ide-java", {
+      const record = await managed.install("ide-jdtls", {
         version: process.env.JDTLS_VERSION || "1.61.0",
       });
       expect(record.checksum).toMatch(/^sha256:[0-9a-f]{64}$/);
@@ -83,7 +83,7 @@ liveSuite("ide-java real JDT LS protocol", () => {
           .readdirSync(path.join(installed.directory, "plugins"))
           .some((name) => /^org\.eclipse\.osgi_.*\.jar$/.test(name)),
       ).toBe(true);
-      lumine.config.set("ide-java.serverDirectory", "");
+      lumine.config.set("ide-jdtls.serverDirectory", "");
       const { serverInfo } = await client.start(installed);
       expect(serverInfo.version).toContain(record.version);
       const covered = await exerciseServer(client, fixture);

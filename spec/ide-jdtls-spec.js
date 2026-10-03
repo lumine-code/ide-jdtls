@@ -20,16 +20,16 @@ const fakeDistribution = (directory) => {
   }
 };
 
-describe("ide-java server discovery and installation", () => {
+describe("ide-jdtls server discovery and installation", () => {
   let fixture, server;
   beforeEach(async () => {
     jasmine.useRealClock();
     fixture = createProject();
-    await lumine.packages.activatePackage("ide-java");
+    await lumine.packages.activatePackage("ide-jdtls");
     server = require("../lib/server");
   });
   afterEach(async () => {
-    await lumine.packages.deactivatePackage("ide-java");
+    await lumine.packages.deactivatePackage("ide-jdtls");
     removeProject(fixture.rootPath);
   });
   it("requires a supported runtime and validates explicit selections before switching", async () => {
@@ -176,10 +176,10 @@ describe("ide-java server discovery and installation", () => {
   });
 });
 
-describe("ide-java service edges and settings", () => {
+describe("ide-jdtls service edges and settings", () => {
   let main, adapter, edge, cleanup;
   beforeEach(async () => {
-    main = (await lumine.packages.activatePackage("ide-java")).mainModule;
+    main = (await lumine.packages.activatePackage("ide-jdtls")).mainModule;
     cleanup = jasmine.createSpy("cleanup");
     edge = main.consumeIdeClient({
       registerAdapter(value) {
@@ -196,14 +196,14 @@ describe("ide-java service edges and settings", () => {
       "formatterProfileUrl",
       "formatterProfile",
     ])
-      lumine.config.unset(`ide-java.${key}`);
-    await lumine.packages.deactivatePackage("ide-java");
+      lumine.config.unset(`ide-jdtls.${key}`);
+    await lumine.packages.deactivatePackage("ide-jdtls");
   });
   it("registers only Java and leaves unsupported client lenses unavailable", () => {
     expect(adapter.grammarScopes).toEqual(["source.java"]);
     expect(adapter.isFeatureAvailable("codeLens")).toBe(false);
     expect(require("../package.json").configSchema.features.properties.codeLens).toBeUndefined();
-    expect(main.provideBackgroundTips().packageName).toBe("ide-java");
+    expect(main.provideBackgroundTips().packageName).toBe("ide-jdtls");
     edge.dispose();
     expect(cleanup).toHaveBeenCalled();
   });
@@ -222,10 +222,10 @@ describe("ide-java service edges and settings", () => {
     ).toBe(false);
   });
   it("sends supported overrides as Java settings", () => {
-    lumine.config.set("ide-java.parameterHints", "all");
-    lumine.config.set("ide-java.buildConfigurationUpdates", "automatic");
-    lumine.config.set("ide-java.formatterProfileUrl", "https://example.com/formatter.xml");
-    lumine.config.set("ide-java.formatterProfile", "Team");
+    lumine.config.set("ide-jdtls.parameterHints", "all");
+    lumine.config.set("ide-jdtls.buildConfigurationUpdates", "automatic");
+    lumine.config.set("ide-jdtls.formatterProfileUrl", "https://example.com/formatter.xml");
+    lumine.config.set("ide-jdtls.formatterProfile", "Team");
     expect(adapter.getWorkspaceConfiguration("java.inlayHints.parameterNames.enabled")).toBe("all");
     expect(adapter.getWorkspaceConfiguration("java.configuration.updateBuildConfiguration")).toBe(
       "automatic",
@@ -246,13 +246,13 @@ describe("ide-java service edges and settings", () => {
     edge.dispose();
     expect(secondCleanup).not.toHaveBeenCalled();
     second.dispose();
-    const packagePath = lumine.packages.getActivePackage("ide-java").path;
-    await lumine.packages.deactivatePackage("ide-java");
-    await lumine.packages.unloadPackage("ide-java");
+    const packagePath = lumine.packages.getActivePackage("ide-jdtls").path;
+    await lumine.packages.deactivatePackage("ide-jdtls");
+    await lumine.packages.unloadPackage("ide-jdtls");
     await lumine.packages.loadPackage(packagePath);
-    const current = (await lumine.packages.activatePackage("ide-java")).mainModule;
+    const current = (await lumine.packages.activatePackage("ide-jdtls")).mainModule;
     expect(current).not.toBe(main);
-    expect(current.provideBackgroundTips().packageName).toBe("ide-java");
+    expect(current.provideBackgroundTips().packageName).toBe("ide-jdtls");
   });
   it("reports missing dependencies through the hub", async () => {
     spyOn(require("../lib/server"), "resolveServer").and.resolveTo(null);
@@ -267,7 +267,7 @@ describe("ide-java service edges and settings", () => {
     });
     try {
       expect(await registered.resolveServer({ rootPath: "/project" })).toBeNull();
-      expect(missing.calls.mostRecent().args[0]).toBe("ide-java");
+      expect(missing.calls.mostRecent().args[0]).toBe("ide-jdtls");
     } finally {
       registration.dispose();
     }
