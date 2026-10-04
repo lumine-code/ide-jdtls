@@ -137,7 +137,7 @@ liveSuite("ide-jdtls actual editor routing", () => {
     expect((await formatter.formatEntireFile(editor)).length).toBeGreaterThan(0);
     lumine.config.set("ide-jdtls.features.format", false);
     expect(await service.activeSessionForFeature(editor, "textDocument/formatting")).toBeNull();
-    expect(await formatter.formatEntireFile(editor)).toEqual([]);
+    expect(await formatter.formatEntireFile(editor)).toBeNull();
     lumine.config.set("ide-jdtls.features.hover", false);
     expect(await main.provideContextHelp().getHelp(editor, point("doubleValue(3)"))).toBeNull();
     expect(service.featureEnabled(session.adapter, "codeLens", editor)).toBe(false);
