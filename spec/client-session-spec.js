@@ -96,7 +96,7 @@ liveSuite("ide-jdtls actual editor routing", () => {
       ),
     ).toBe(true);
     expect(
-      JSON.stringify(await main.provideHover().hover(editor, point("doubleValue(3)"))),
+      JSON.stringify(await main.provideContextHelp().getHelp(editor, point("doubleValue(3)"))),
     ).toContain("doubleValue");
     expect(
       (await main.provideHoverSignature().getSignature(editor, point("doubleValue(3)", 12)))
@@ -139,7 +139,7 @@ liveSuite("ide-jdtls actual editor routing", () => {
     expect(await service.activeSessionForFeature(editor, "textDocument/formatting")).toBeNull();
     expect(await formatter.formatEntireFile(editor)).toEqual([]);
     lumine.config.set("ide-jdtls.features.hover", false);
-    expect(await main.provideHover().hover(editor, point("doubleValue(3)"))).toBeNull();
+    expect(await main.provideContextHelp().getHelp(editor, point("doubleValue(3)"))).toBeNull();
     expect(service.featureEnabled(session.adapter, "codeLens", editor)).toBe(false);
     const actions = await main
       .provideIntentionsList()
