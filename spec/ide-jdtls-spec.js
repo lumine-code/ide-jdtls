@@ -216,7 +216,7 @@ describe("ide-jdtls service edges and settings", () => {
         format: { onType: { enabled: true } },
       },
     });
-    expect(adapter.getWorkspaceConfiguration("java.configuration")).toBeUndefined();
+    expect(adapter.getSettings().java.configuration).toBeUndefined();
     expect(
       adapter.getInitializationOptions().extendedClientCapabilities.classFileContentsSupport,
     ).toBe(false);
@@ -226,15 +226,13 @@ describe("ide-jdtls service edges and settings", () => {
     lumine.config.set("ide-jdtls.buildConfigurationUpdates", "automatic");
     lumine.config.set("ide-jdtls.formatterProfileUrl", "https://example.com/formatter.xml");
     lumine.config.set("ide-jdtls.formatterProfile", "Team");
-    expect(adapter.getWorkspaceConfiguration("java.inlayHints.parameterNames.enabled")).toBe("all");
-    expect(adapter.getWorkspaceConfiguration("java.configuration.updateBuildConfiguration")).toBe(
-      "automatic",
-    );
-    expect(adapter.getWorkspaceConfiguration("java.format.settings")).toEqual({
+    expect(adapter.getSettings().java.inlayHints.parameterNames.enabled).toBe("all");
+    expect(adapter.getSettings().java.configuration.updateBuildConfiguration).toBe("automatic");
+    expect(adapter.getSettings().java.format.settings).toEqual({
       url: "https://example.com/formatter.xml",
       profile: "Team",
     });
-    expect(adapter.getWorkspaceConfiguration("unrelated")).toBeUndefined();
+    expect(adapter.getWorkspaceConfiguration).toBeUndefined();
   });
   it("cleans up provider edges independently and reacquires the generation after reload", async () => {
     const secondCleanup = jasmine.createSpy("secondCleanup");
