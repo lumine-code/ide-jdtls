@@ -61,14 +61,12 @@ liveSuite("ide-jdtls real JDT LS protocol", () => {
   it("installs the checksum-verified milestone through the real managed pipeline and launches its complete tree", async () => {
     const packagePath = (await lumine.packages.loadPackage("ide")).path;
     const ManagedServers = require(path.join(packagePath, "lib", "managed-servers"));
-    const managed = new ManagedServers(
-      {
-        adapters: new Map([[adapter.id, adapter]]),
-        allSessions: () => [],
-        reattachAll: async () => {},
-      },
-      { storageRoot: path.join(fixture.configDirPath, "managed") },
-    );
+    const LanguageServerManager = require(path.join(packagePath, "lib", "language-server-manager"));
+    const manager = new LanguageServerManager();
+    manager.registerAdapter(adapter);
+    const managed = new ManagedServers(manager, {
+      storageRoot: path.join(fixture.configDirPath, "managed"),
+    });
     try {
       const record = await managed.install("ide-jdtls", {
         version: process.env.JDTLS_VERSION || "1.61.0",
@@ -89,7 +87,8 @@ liveSuite("ide-jdtls real JDT LS protocol", () => {
       const covered = await exerciseServer(client, fixture);
       expect(covered).toContain("code actions");
     } finally {
-      managed.emitter.dispose();
+      managed.dispose();
+      await manager.deactivate();
     }
   });
 });
