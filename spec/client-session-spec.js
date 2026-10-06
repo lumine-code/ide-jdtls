@@ -34,9 +34,9 @@ liveSuite("ide-jdtls actual editor routing", () => {
     lumine.config.set("ide-jdtls.serverDirectory", serverDirectory);
     lumine.config.set("ide-jdtls.javaPath", javaPath);
     lumine.config.set("ide-jdtls.parameterHints", "all");
-    for (const name of ["language-java", "ide-client", "ide-jdtls"])
+    for (const name of ["language-java", "ide", "ide-jdtls"])
       await lumine.packages.activatePackage(name);
-    service = lumine.packages.getActivePackage("ide-client").mainModule.provideIdeClient();
+    service = lumine.packages.getActivePackage("ide").mainModule.provideIde();
     subscription = service.onDidPublishDiagnostics((value) => published.push(value));
     lumine.project.setPaths([fixture.rootPath]);
     editor = await lumine.workspace.open(fixture.filePath);
@@ -45,7 +45,7 @@ liveSuite("ide-jdtls actual editor routing", () => {
   afterEach(async () => {
     subscription.dispose();
     editor?.destroy();
-    for (const name of ["ide-jdtls", "ide-client", "language-java"])
+    for (const name of ["ide-jdtls", "ide", "language-java"])
       await lumine.packages.deactivatePackage(name);
     for (const key of [
       "serverDirectory",
@@ -83,7 +83,7 @@ liveSuite("ide-jdtls actual editor routing", () => {
         ),
       "Java diagnostics in the editor",
     );
-    const main = lumine.packages.getActivePackage("ide-client").mainModule;
+    const main = lumine.packages.getActivePackage("ide").mainModule;
     const suggestions = await main.provideAutocomplete().getSuggestions({
       editor,
       bufferPosition: point("doubleValue(3)", 3),

@@ -32,9 +32,9 @@
     "format:check": "prettier --check ."
   },
   "consumedServices": {
-    "ide-client": {
+    "ide": {
       "versions": {
-        "^1.0.0": "consumeIdeClient"
+        "^1.0.0": "consumeIde"
       }
     }
   },
@@ -46,7 +46,7 @@
     }
   },
   "specPackages": [
-    "ide-client",
+    "ide",
     "language-java"
   ],
   "devDependencies": {

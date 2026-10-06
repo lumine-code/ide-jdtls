@@ -2,7 +2,7 @@
 
 Provide Java language features with Eclipse JDT Language Server.
 
-Connects Java editors to Eclipse JDT LS through the shared ide-client service.
+Connects Java editors to Eclipse JDT LS through the shared ide service.
 
 ## Features
 
@@ -18,7 +18,7 @@ Connects Java editors to Eclipse JDT LS through the shared ide-client service.
 
 To install ide-jdtls search for it in the Install pane of the Lumine settings, or run the command `lumine --install lumine-code/ide-jdtls`.
 
-Install `ide-client` and `language-java` as well. Install a [Java 21 or newer JDK](https://adoptium.net/temurin/releases/?version=21), then use **Manage Servers** to install Eclipse JDT Language Server. The package discovers Java through `JDK_HOME`, `JAVA_HOME` and `PATH`; select its `java` executable in the package settings when it is elsewhere.
+Install `ide` and `language-java` as well. Install a [Java 21 or newer JDK](https://adoptium.net/temurin/releases/?version=21), then use **Manage Servers** to install Eclipse JDT Language Server. The package discovers Java through `JDK_HOME`, `JAVA_HOME` and `PATH`; select its `java` executable in the package settings when it is elsewhere.
 
 ## Usage
 
@@ -32,7 +32,7 @@ Project source navigation is supported. JDT LS's virtual class-file documents an
 
 ## Services
 
-- `ide-client`: consumed to register and manage Eclipse JDT Language Server sessions.
+- `ide`: consumed to register and manage Eclipse JDT Language Server sessions.
 - `background-tips.provider`: provided to explain Java project import over the empty workspace.
 
 ## Contributing

@@ -29,7 +29,7 @@ liveSuite("ide-jdtls real JDT LS protocol", () => {
     lumine.config.set("ide-jdtls.serverDirectory", serverDirectory);
     lumine.config.set("ide-jdtls.javaPath", javaPath);
     lumine.config.set("ide-jdtls.parameterHints", "all");
-    edge = main.consumeIdeClient({
+    edge = main.consumeIde({
       registerAdapter(value) {
         adapter = value;
         client = new LiveLspClient(value, fixture.rootPath);
@@ -59,7 +59,7 @@ liveSuite("ide-jdtls real JDT LS protocol", () => {
     ).toBe(true);
   });
   it("installs the checksum-verified milestone through the real managed pipeline and launches its complete tree", async () => {
-    const packagePath = (await lumine.packages.loadPackage("ide-client")).path;
+    const packagePath = (await lumine.packages.loadPackage("ide")).path;
     const ManagedServers = require(path.join(packagePath, "lib", "managed-servers"));
     const managed = new ManagedServers(
       {

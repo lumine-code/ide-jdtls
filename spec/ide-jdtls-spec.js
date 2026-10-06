@@ -228,7 +228,7 @@ describe("ide-jdtls service edges and settings", () => {
   beforeEach(async () => {
     main = (await lumine.packages.activatePackage("ide-jdtls")).mainModule;
     cleanup = jasmine.createSpy("cleanup");
-    edge = main.consumeIdeClient({
+    edge = main.consumeIde({
       registerAdapter(value) {
         adapter = value;
         return { dispose: cleanup };
@@ -283,7 +283,7 @@ describe("ide-jdtls service edges and settings", () => {
   });
   it("cleans up provider edges independently and reacquires the generation after reload", async () => {
     const secondCleanup = jasmine.createSpy("secondCleanup");
-    const second = main.consumeIdeClient({
+    const second = main.consumeIde({
       registerAdapter() {
         return { dispose: secondCleanup };
       },
@@ -303,7 +303,7 @@ describe("ide-jdtls service edges and settings", () => {
     spyOn(require("../lib/server"), "resolveServer").and.resolveTo(null);
     const missing = jasmine.createSpy("missing");
     let registered;
-    const registration = main.consumeIdeClient({
+    const registration = main.consumeIde({
       registerAdapter(value) {
         registered = value;
         return { dispose() {} };
