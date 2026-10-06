@@ -1,3 +1,4 @@
+const { resolutionContext, findOnPath } = require("./helpers/server-resolution");
 const fs = require("node:fs");
 const path = require("node:path");
 const { createProject, removeProject } = require("./helpers/project");
@@ -34,21 +35,29 @@ describe("ide-jdtls server discovery and installation", () => {
   });
   it("requires a supported runtime and validates explicit selections before switching", async () => {
     spyOn(server, "javaMajorVersion").and.resolveTo(21);
-    expect(await server.resolveJava(process.execPath, { PATH: "" })).toBe(process.execPath);
-    await expectAsync(server.resolveJava(fixture.rootPath)).toBeRejected();
-    await expectAsync(server.resolveJava("relative/java")).toBeRejectedWithError(/absolute/);
+    expect(
+      (await server.resolveJava(resolutionContext(), process.execPath, { PATH: "" }))?.path ?? null,
+    ).toBe(process.execPath);
+    await expectAsync(server.resolveJava(resolutionContext(), fixture.rootPath)).toBeRejected();
+    await expectAsync(
+      server.resolveJava(resolutionContext(), "relative/java"),
+    ).toBeRejectedWithError(/absolute/);
     server.javaMajorVersion.and.resolveTo(17);
-    await expectAsync(server.resolveJava(process.execPath)).toBeRejectedWithError(/Java 21/);
-    expect(await server.resolveJava("", { PATH: "" })).toBeNull();
+    await expectAsync(
+      server.resolveJava(resolutionContext(), process.execPath),
+    ).toBeRejectedWithError(/Java 21/);
+    expect(
+      (await server.resolveJava(resolutionContext(), "", { PATH: "" }))?.path ?? null,
+    ).toBeNull();
   });
   it("finds native PATH files and skips directories", () => {
     expect(
-      server.findOnPath(path.basename(process.execPath, path.extname(process.execPath)), {
+      findOnPath(path.basename(process.execPath, path.extname(process.execPath)), {
         PATH: path.dirname(process.execPath),
       }),
     ).toBeTruthy();
     fs.mkdirSync(path.join(fixture.rootPath, "java"));
-    expect(server.findOnPath("java", { PATH: fixture.rootPath })).toBeNull();
+    expect(findOnPath("java", { PATH: fixture.rootPath })).toBeNull();
   });
   it("continues past an older Java on PATH to a supported runtime", async () => {
     const oldDirectory = path.join(fixture.rootPath, "old"),
@@ -62,7 +71,11 @@ describe("ide-jdtls server discovery and installation", () => {
       command.startsWith(oldDirectory) ? 17 : 21,
     );
     expect(
-      await server.resolveJava("", { PATH: `${oldDirectory}${path.delimiter}${newDirectory}` }),
+      (
+        await server.resolveJava(resolutionContext(), "", {
+          PATH: `${oldDirectory}${path.delimiter}${newDirectory}`,
+        })
+      )?.path ?? null,
     ).toBe(path.join(newDirectory, name));
   });
   it("prefers an explicit distribution, then managed, then JDTLS_HOME", async () => {
@@ -73,13 +86,33 @@ describe("ide-jdtls server discovery and installation", () => {
     const installed = {
       modulePath: path.join(managed, "plugins", "org.eclipse.equinox.launcher_1.jar"),
     };
-    expect(await server.resolveDirectory(explicit, installed, { JDTLS_HOME: system })).toBe(
-      explicit,
-    );
-    expect(await server.resolveDirectory("", installed, { JDTLS_HOME: system })).toBe(managed);
-    expect(await server.resolveDirectory("", null, { JDTLS_HOME: system, PATH: "" })).toBe(system);
+    expect(
+      (
+        await server.resolveDirectory(resolutionContext({ managedServer: installed }), explicit, {
+          JDTLS_HOME: system,
+        })
+      )?.path ?? null,
+    ).toBe(explicit);
+    expect(
+      (
+        await server.resolveDirectory(resolutionContext({ managedServer: installed }), "", {
+          JDTLS_HOME: system,
+        })
+      )?.path ?? null,
+    ).toBe(managed);
+    expect(
+      (
+        await server.resolveDirectory(resolutionContext({ managedServer: null }), "", {
+          JDTLS_HOME: system,
+          PATH: "",
+        })
+      )?.path ?? null,
+    ).toBe(system);
     await expectAsync(
-      server.resolveDirectory(path.join(fixture.rootPath, "missing"), installed),
+      server.resolveDirectory(
+        resolutionContext({ managedServer: installed }),
+        path.join(fixture.rootPath, "missing"),
+      ),
     ).toBeRejected();
   });
   it("selects the published configuration for every supported architecture", async () => {
@@ -113,11 +146,10 @@ describe("ide-jdtls server discovery and installation", () => {
   it("launches the JAR with read-only shared configuration and removes inherited socket variables", async () => {
     fakeDistribution(fixture.configDirPath);
     spyOn(server, "javaMajorVersion").and.resolveTo(25);
-    const launch = await server.resolveServer({
+    const launch = await server.resolveServer(resolutionContext(fixture), {
       serverDirectory: fixture.configDirPath,
       javaPath: process.execPath,
       maxHeap: 512,
-      context: fixture,
     });
     expect(launch.command).toBe(process.execPath);
     expect(launch.transport).toBe("stdio");
@@ -126,6 +158,7 @@ describe("ide-jdtls server discovery and installation", () => {
     expect(launch.args).toContain("-Djdk.xml.totalEntitySizeLimit=0");
     expect(Object.hasOwn(launch.env, "CLIENT_PORT")).toBe(true);
     expect(launch.env.CLIENT_PORT).toBeUndefined();
+    expect(server.javaMajorVersion.calls.count()).toBe(1);
   });
   it("selects the latest stable milestone numerically", async () => {
     spyOn(server, "fetchText").and.resolveTo(
