@@ -131,6 +131,20 @@ describe("ide-jdtls server discovery and installation", () => {
       server.distribution(fixture.configDirPath, "win32", "arm64"),
     ).toBeRejectedWithError(/no supported configuration/);
   });
+  it("uses an explicit distribution without reading a corrupt managed installation", async () => {
+    fakeDistribution(fixture.configDirPath);
+    const getManagedServer = jasmine
+      .createSpy("getManagedServer")
+      .and.throwError("Corrupt managed record");
+    const context = resolutionContext({ ...fixture, getManagedServer });
+    expect((await server.resolveDirectory(context, fixture.configDirPath)).path).toBe(
+      fixture.configDirPath,
+    );
+    expect(getManagedServer).not.toHaveBeenCalled();
+    await expectAsync(server.resolveDirectory(context)).toBeRejectedWithError(
+      "Corrupt managed record",
+    );
+  });
   it("isolates project and window locks while keeping restarts on the same caches", () => {
     const first = server.cachePaths(fixture.configDirPath, fixture.rootPath, "window-a");
     expect(server.cachePaths(fixture.configDirPath, fixture.rootPath, "window-a")).toEqual(first);
