@@ -181,6 +181,110 @@ describe("ide-jdtls server discovery and installation", () => {
     expect(await server.latestServerVersion()).toBe("1.61.0");
     expect(() => server.stableVersion("1.62.0-SNAPSHOT")).toThrowError(/stable/);
   });
+
+  it("does not send an already canceled metadata request", async () => {
+    const controller = new AbortController();
+    const reason = new DOMException("Installation canceled", "AbortError");
+    controller.abort(reason);
+    const request = spyOn(global, "fetch").and.resolveTo({ ok: true, text: async () => "stale" });
+    await expectAsync(
+      server.fetchText("https://fixture/eclipse", { signal: controller.signal }),
+    ).toBeRejectedWith(reason);
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it("cancels a pending metadata request with the installation signal", async () => {
+    const controller = new AbortController();
+    let received;
+    spyOn(global, "fetch").and.callFake((_url, options) => {
+      received = options?.signal;
+      if (!received) return Promise.resolve({ ok: true, text: async () => "stale" });
+      return new Promise((_resolve, reject) => {
+        received.addEventListener("abort", () => reject(received.reason), { once: true });
+      });
+    });
+    const pending = server.fetchText("https://fixture/eclipse", { signal: controller.signal });
+    const reason = new DOMException("Installation canceled", "AbortError");
+    controller.abort(reason);
+    await expectAsync(pending).toBeRejectedWith(reason);
+    expect(received?.aborted).toBe(true);
+  });
+
+  it("rejects a canceled response body even if the mocked transport ignores cancellation", async () => {
+    const controller = new AbortController();
+    let finishBody, startedBody;
+    const reading = new Promise((resolve) => (startedBody = resolve));
+    spyOn(global, "fetch").and.resolveTo({
+      ok: true,
+      text: () => {
+        startedBody();
+        return new Promise((resolve) => (finishBody = resolve));
+      },
+    });
+    const pending = server.fetchText("https://fixture/eclipse", { signal: controller.signal });
+    await reading;
+    const reason = new DOMException("Installation canceled", "AbortError");
+    controller.abort(reason);
+    finishBody("obsolete body");
+    await expectAsync(pending).toBeRejectedWith(reason);
+  });
+
+  it("bounds pending metadata transfers with a thirty-second timeout", async () => {
+    const timeout = new AbortController();
+    const timer = spyOn(AbortSignal, "timeout").and.returnValue(timeout.signal);
+    spyOn(global, "fetch").and.callFake((_url, options) => {
+      const signal = options?.signal;
+      if (!signal) return Promise.resolve({ ok: true, text: async () => "stale" });
+      return new Promise((_resolve, reject) => {
+        signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+      });
+    });
+    const pending = server.fetchText("https://fixture/eclipse");
+    const reason = new DOMException("Metadata timed out", "TimeoutError");
+    timeout.abort(reason);
+    await expectAsync(pending).toBeRejectedWith(reason);
+    expect(timer).toHaveBeenCalledWith(30000);
+  });
+
+  it("passes the API signal through milestone and archive metadata lookups", async () => {
+    const controller = new AbortController();
+    const fetchText = spyOn(server, "fetchText").and.resolveTo('<a href="1.61.0/">stable</a>');
+    const api = { signal: controller.signal };
+    expect(await server.latestServerVersion(api)).toBe("1.61.0");
+    expect(fetchText.calls.mostRecent().args[1]?.signal).toBe(controller.signal);
+    fetchText.and.callFake(async (_url, options) => {
+      expect(options?.signal?.aborted).toBe(false);
+      controller.abort(new DOMException("Installation canceled", "AbortError"));
+      return "jdt-language-server-1.61.0-202609031315.tar.gz";
+    });
+    api.downloadFile = jasmine.createSpy("downloadFile");
+    api.setServerInstallationStatus = jasmine.createSpy("setStatus");
+    await expectAsync(
+      server.installServer({ storagePath: fixture.configDirPath, version: "1.61.0", api }),
+    ).toBeRejectedWith(controller.signal.reason);
+    expect(api.downloadFile).not.toHaveBeenCalled();
+    expect(api.setServerInstallationStatus).not.toHaveBeenCalled();
+  });
+
+  it("does not resume an installation from a canceled checksum lookup", async () => {
+    const controller = new AbortController();
+    const reason = new DOMException("Checksum read canceled", "AbortError");
+    spyOn(server, "fetchText").and.callFake(async (url) => {
+      if (url.endsWith("latest.txt")) return "jdt-language-server-1.61.0-202609031315.tar.gz";
+      controller.abort(reason);
+      return "a".repeat(64);
+    });
+    const api = {
+      signal: controller.signal,
+      downloadFile: jasmine.createSpy("downloadFile"),
+      setServerInstallationStatus: jasmine.createSpy("setStatus"),
+    };
+    await expectAsync(
+      server.installServer({ storagePath: fixture.configDirPath, version: "1.61.0", api }),
+    ).toBeRejectedWith(reason);
+    expect(api.downloadFile).not.toHaveBeenCalled();
+    expect(api.setServerInstallationStatus).not.toHaveBeenCalled();
+  });
   it("requires the official digest and preserves the complete distribution tree", async () => {
     const archive = "jdt-language-server-1.61.0-202609031315.tar.gz",
       checksum = "a".repeat(64);
