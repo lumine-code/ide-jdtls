@@ -14,6 +14,8 @@ Connects Java editors to Eclipse JDT LS through the shared ide service.
 - **Project import**: Maven, Gradle and Eclipse projects using JDT LS defaults.
 - **Managed installation**: stable milestones verified against Eclipse's SHA256 checksum, with the full server distribution preserved.
 
+![The Java language server reports an incompatible assignment.](.github/demo.png)
+
 ## Installation
 
 To install ide-jdtls search for it in the Install pane of the Lumine settings, or run the command `lumine --install lumine-code/ide-jdtls`.

@@ -1,0 +1,17 @@
+{
+  "title": "ide-jdtls",
+  "description": "The Java language server reports an incompatible assignment.",
+  "recordedOn": "2026-10-13",
+  "sourceRevision": "8a13d487e3d99830ed6d6da1e66507faa4faa91b",
+  "mode": "normal",
+  "fontSettings": "default",
+  "themeSourceRevision": "6564a9e21899b5541e9c8f8006f9be6d6d72e6ad",
+  "images": [
+    {
+      "file": "demo.png",
+      "label": "The Java language server reports an incompatible assignment.",
+      "width": 1100,
+      "height": 490
+    }
+  ]
+}
