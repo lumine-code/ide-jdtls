@@ -1,17 +1,104 @@
 {
   "title": "ide-jdtls",
   "description": "The Java language server reports an incompatible assignment.",
-  "recordedOn": "2026-10-13",
-  "sourceRevision": "8a13d487e3d99830ed6d6da1e66507faa4faa91b",
+  "recordedOn": "2026-10-14",
+  "sourceRevision": "cd69a1a99e113225bae62f53007b1c123aa77d8b",
+  "themeSourceRevision": "14a69683b0e3238e2bc128fbfae3866c1e4ee9c6",
   "mode": "normal",
   "fontSettings": "default",
-  "themeSourceRevision": "6564a9e21899b5541e9c8f8006f9be6d6d72e6ad",
+  "scenario": "demo.js",
+  "recipeHash": "e4ee7eeabe51a6aba7430e96c832270dd7eb8b310988337697bf8933d8d7240b",
+  "environment": {
+    "platform": "win32",
+    "arch": "x64",
+    "electron": "44.7.0",
+    "chrome": "152.0.7977.130",
+    "devicePixelRatio": 1,
+    "locale": "en-GB",
+    "fontFamily": "Fira Code, Menlo, DejaVu Sans Mono, Consolas, monospace",
+    "fontSize": 14,
+    "themes": ["one-day-syntax", "one-day-ui"]
+  },
+  "viewport": { "width": 1100, "height": 490 },
+  "cornerRadius": 10,
+  "sources": {
+    "editor": {
+      "revision": "8be8f86075ad93df038610d82b3ac6d99329957d",
+      "dirty": false,
+      "workingTreeHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "package": {
+      "revision": "cd69a1a99e113225bae62f53007b1c123aa77d8b",
+      "dirty": true,
+      "workingTreeHash": "e20cdec4505a133b3ea3adb448f50abfb2589f911fa4234cd254508672696248"
+    },
+    "ide-jdtls": {
+      "revision": "cd69a1a99e113225bae62f53007b1c123aa77d8b",
+      "dirty": true,
+      "workingTreeHash": "e20cdec4505a133b3ea3adb448f50abfb2589f911fa4234cd254508672696248"
+    },
+    "documentation-view": {
+      "revision": "5d0a00d98bf0b1f7a5444f548a4683a07062ada0",
+      "dirty": true,
+      "workingTreeHash": "012fbb9e6b8dc1f192ee363c7fbf3170548e39169ca52d87f81061f968e31fd3"
+    },
+    "hover": {
+      "revision": "6a05977f1748bd17f7559631f423f34c257d162b",
+      "dirty": true,
+      "workingTreeHash": "09e99cf5a334b94b212db69efe6c22849d4058416233745e88706c0b0e8ec02d"
+    },
+    "ide": {
+      "revision": "9c74eaee81caf600e73c5c50e1fbf9d9f894d560",
+      "dirty": true,
+      "workingTreeHash": "d648bd45282065de577eef821a325ad0cd0c4b2ee57852485d537e5d21d192f1"
+    },
+    "language-java": {
+      "revision": "5d938c4d6f273183d33eec7366ad584a823bd218",
+      "dirty": true,
+      "workingTreeHash": "ee49c7bf21bfe2326c196d41314506b4c8752d0f36a57babe29d6b9c376fa8db"
+    },
+    "linter": {
+      "revision": "0965aceb6980bd6c2b706b30874b11bdb6331a5e",
+      "dirty": true,
+      "workingTreeHash": "abd277412c84d07180787e870b71ce2b6b63f9766063ae81a029f7723467f3c3"
+    },
+    "linter-panel": {
+      "revision": "e8fe8ad0f2906a1bc430cd70793d1f82c467682c",
+      "dirty": true,
+      "workingTreeHash": "8f9214c58bdb765df2338b72708ad922514614c418882d9f95107249a87f2eda"
+    },
+    "marker": {
+      "revision": "090aa886a5318fb8a3251cee47c452cf068e08c2",
+      "dirty": true,
+      "workingTreeHash": "d48a91a2025e76cd6da2916c45bbfef07d82dd550cc7f111378e824f86eb144f"
+    },
+    "one-theme": {
+      "revision": "14a69683b0e3238e2bc128fbfae3866c1e4ee9c6",
+      "dirty": true,
+      "workingTreeHash": "50ec2f83a6347dd8113870992ec4eb2be4014f3d9e12213c2f51b543f1eca793"
+    }
+  },
+  "fixtures": [
+    {
+      "file": "ide-jdtls/.classpath",
+      "sha256": "ad889776be0b70984b4a7cfc9378e5742aa4dbe343310578f080602ea4ca521b"
+    },
+    {
+      "file": "ide-jdtls/.project",
+      "sha256": "b795818394348e9c615d8a06532a1a2d441dfa230fe5319d77e7c84b80fa89d3"
+    },
+    {
+      "file": "ide-jdtls/Signal.java",
+      "sha256": "a430593379bedc80f7e2013b7d1c9f2b5c8eab1773352414745906a7dc0b7b48"
+    }
+  ],
   "images": [
     {
       "file": "demo.png",
       "label": "The Java language server reports an incompatible assignment.",
       "width": 1100,
-      "height": 490
+      "height": 490,
+      "sha256": "f0baa0e964a4e0ecd5f475a666dc3c66924ce3480473e6fd06b5285714da86d9"
     }
   ]
 }
