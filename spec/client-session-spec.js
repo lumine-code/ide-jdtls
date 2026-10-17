@@ -187,49 +187,82 @@ liveSuite("ide-jdtls actual editor routing", () => {
       // A live editor may change while JDT LS is answering during reactivation.
       // Keep the real request and force that boundary so stale replies cannot be
       // mistaken for a failed restart or accepted with outdated coordinates.
-      const request = renewed.connection.request.bind(renewed.connection);
+      const manager = lumine.packages.getActivePackage("ide").mainModule.manager,
+        observedConnections = new Set();
       let hoverRequests = 0,
         injectedEdits = 0,
         injectedDuringAttempt = false,
-        forcedError;
-      spyOn(renewed.connection, "request").and.callFake((method, ...args) => {
-        const response = request(method, ...args);
-        if (method === "textDocument/hover" && ++hoverRequests === 1) {
-          injectedEdits++;
-          injectedDuringAttempt = true;
-          editor.setText(editor.getText() + "\n");
-        }
-        return response;
-      });
+        recoveryRequested = false,
+        forcedError,
+        firstHoverSession,
+        finalSession;
       const result = await until(async () => {
         injectedDuringAttempt = false;
-        reloadTrace.record("hover.begin", { session: reloadTrace.sessionState(renewed) });
+        // File-watch recovery may replace a healthy physical process while
+        // its adapter remains registered. Resolve the current route once per
+        // attempt under this polling deadline instead of retaining that process.
+        const candidate = (await service.activeSessionsForEditor(editor)).find(
+          ({ adapter }) => adapter.id === "ide-jdtls",
+        );
+        if (!candidate) return null;
+        if (!observedConnections.has(candidate.connection)) {
+          observedConnections.add(candidate.connection);
+          const request = candidate.connection.request.bind(candidate.connection);
+          spyOn(candidate.connection, "request").and.callFake((method, ...args) => {
+            const response = request(method, ...args);
+            if (method === "textDocument/hover" && ++hoverRequests === 1) {
+              firstHoverSession = candidate;
+              injectedEdits++;
+              injectedDuringAttempt = true;
+              editor.setText(editor.getText() + "\n");
+            }
+            return response;
+          });
+        }
+        reloadTrace.record("hover.begin", { session: reloadTrace.sessionState(candidate) });
         try {
-          const response = await renewed.request("textDocument/hover", {
+          const response = await candidate.request("textDocument/hover", {
             textDocument: { uri: fixture.uri },
             position: position(fixture.text, "doubleValue(3)", 1),
           });
-          reloadTrace.record("hover.result", { session: reloadTrace.sessionState(renewed) });
+          reloadTrace.record("hover.result", { session: reloadTrace.sessionState(candidate) });
+          finalSession = candidate;
           return response;
         } catch (error) {
           reloadTrace.record("hover.error", {
             error: error.message,
             code: error.code,
-            session: reloadTrace.sessionState(renewed),
+            session: reloadTrace.sessionState(candidate),
           });
           if (injectedDuringAttempt) forcedError = error;
           // Readiness can cross a document synchronization boundary. Retire
           // only that obsolete read; transport and lifecycle failures remain
           // test failures, and a replacement request must return real content.
-          if (error?.code === "PROJECTION_STALE") return null;
+          if (error?.code === "PROJECTION_STALE") {
+            if (injectedDuringAttempt) {
+              recoveryRequested = true;
+              // This is the same real restart path used after a lost project
+              // watcher. Await it to require a fresh process for the next read.
+              await manager.restart(firstHoverSession);
+            }
+            return null;
+          }
           throw error;
         }
       }, "Java hover after reload");
       expect(injectedEdits).toBe(1);
       expect(forcedError?.code).toBe("PROJECTION_STALE");
       expect(hoverRequests).toBeGreaterThan(1);
-      expect(renewed.state).toBe("running");
-      expect(await service.activeSessionsForEditor(editor)).toContain(renewed);
+      expect(recoveryRequested).toBe(true);
+      expect(firstHoverSession.state).toBe("stopped");
+      expect(finalSession).not.toBe(firstHoverSession);
+      expect(renewed.state).toBe("stopped");
+      expect(finalSession).not.toBe(renewed);
+      expect(finalSession.adapter).toBe(renewed.adapter);
+      expect(manager.adapters.get("ide-jdtls")).toBe(renewed.adapter);
+      expect(lumine.packages.getActivePackage("ide-jdtls").mainModule).toBe(current);
+      expect(finalSession.state).toBe("running");
+      expect(await service.activeSessionsForEditor(editor)).toContain(finalSession);
       expect(JSON.stringify(result)).toContain("doubleValue");
     } catch (error) {
       reloadTrace.report(error);
