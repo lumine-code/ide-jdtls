@@ -163,14 +163,44 @@ liveSuite("ide-jdtls actual editor routing", () => {
     expect(current).not.toBe(oldMain);
     const renewed = await sessionFor();
     expect(renewed).not.toBe(previous);
-    const result = await until(
-      () =>
-        renewed.request("textDocument/hover", {
+    // A live editor may change while JDT LS is answering during reactivation.
+    // Keep the real request and force that boundary so stale replies cannot be
+    // mistaken for a failed restart or accepted with outdated coordinates.
+    const request = renewed.connection.request.bind(renewed.connection);
+    let hoverRequests = 0,
+      injectedEdits = 0,
+      injectedDuringAttempt = false,
+      forcedError;
+    spyOn(renewed.connection, "request").and.callFake((method, ...args) => {
+      const response = request(method, ...args);
+      if (method === "textDocument/hover" && ++hoverRequests === 1) {
+        injectedEdits++;
+        injectedDuringAttempt = true;
+        editor.setText(editor.getText() + "\n");
+      }
+      return response;
+    });
+    const result = await until(async () => {
+      injectedDuringAttempt = false;
+      try {
+        return await renewed.request("textDocument/hover", {
           textDocument: { uri: fixture.uri },
           position: position(fixture.text, "doubleValue(3)", 1),
-        }),
-      "Java hover after reload",
-    );
+        });
+      } catch (error) {
+        if (injectedDuringAttempt) forcedError = error;
+        // Readiness can cross a document synchronization boundary. Retire
+        // only that obsolete read; transport and lifecycle failures remain
+        // test failures, and a replacement request must return real content.
+        if (error?.code === "PROJECTION_STALE") return null;
+        throw error;
+      }
+    }, "Java hover after reload");
+    expect(injectedEdits).toBe(1);
+    expect(forcedError?.code).toBe("PROJECTION_STALE");
+    expect(hoverRequests).toBeGreaterThan(1);
+    expect(renewed.state).toBe("running");
+    expect(await service.activeSessionsForEditor(editor)).toContain(renewed);
     expect(JSON.stringify(result)).toContain("doubleValue");
   });
 });
