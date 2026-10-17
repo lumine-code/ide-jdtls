@@ -1,6 +1,7 @@
 const { Point } = require("lumine");
 const path = require("node:path");
 const { createProject, removeProject, position } = require("./helpers/project");
+const sessionTrace = require("./helpers/session-trace");
 const serverDirectory = process.env.JDTLS_HOME;
 const javaPath =
   process.env.JAVA_LSP_PATH ||
@@ -18,16 +19,30 @@ const until = async (check, label) => {
 };
 
 liveSuite("ide-jdtls actual editor routing", () => {
-  let fixture, editor, paths, service, timeout, published, subscription;
+  let fixture, editor, paths, service, timeout, published, subscription, reloadTrace;
   beforeAll(() => {
     timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 180000;
+    jasmine.getEnv().addReporter({
+      specDone(result) {
+        if (
+          result.fullName ===
+            "ide-jdtls actual editor routing stops the discarded generation and serves the editor through a new module after unload" &&
+          result.status === "failed"
+        )
+          reloadTrace?.report(
+            new Error(result.failedExpectations.map(({ message }) => message).join("\n")),
+          );
+      },
+    });
   });
   afterAll(() => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = timeout;
+    reloadTrace = null;
   });
   beforeEach(async () => {
     jasmine.useRealClock();
+    reloadTrace = null;
     fixture = createProject();
     paths = lumine.project.getPaths();
     published = [];
@@ -150,57 +165,77 @@ liveSuite("ide-jdtls actual editor routing", () => {
     expect(editor.getText()).toContain("int missingName;");
   });
   it("stops the discarded generation and serves the editor through a new module after unload", async () => {
-    const previous = await sessionFor(),
-      oldPackage = lumine.packages.getActivePackage("ide-jdtls"),
-      oldMain = oldPackage.mainModule,
-      packagePath = oldPackage.path;
-    await lumine.packages.deactivatePackage("ide-jdtls");
-    await until(() => previous.state === "stopped", "Java teardown");
-    expect(service.adaptersForEditor(editor)).toEqual([]);
-    await lumine.packages.unloadPackage("ide-jdtls");
-    await lumine.packages.loadPackage(packagePath);
-    const current = (await lumine.packages.activatePackage("ide-jdtls")).mainModule;
-    expect(current).not.toBe(oldMain);
-    const renewed = await sessionFor();
-    expect(renewed).not.toBe(previous);
-    // A live editor may change while JDT LS is answering during reactivation.
-    // Keep the real request and force that boundary so stale replies cannot be
-    // mistaken for a failed restart or accepted with outdated coordinates.
-    const request = renewed.connection.request.bind(renewed.connection);
-    let hoverRequests = 0,
-      injectedEdits = 0,
-      injectedDuringAttempt = false,
-      forcedError;
-    spyOn(renewed.connection, "request").and.callFake((method, ...args) => {
-      const response = request(method, ...args);
-      if (method === "textDocument/hover" && ++hoverRequests === 1) {
-        injectedEdits++;
-        injectedDuringAttempt = true;
-        editor.setText(editor.getText() + "\n");
-      }
-      return response;
-    });
-    const result = await until(async () => {
-      injectedDuringAttempt = false;
-      try {
-        return await renewed.request("textDocument/hover", {
-          textDocument: { uri: fixture.uri },
-          position: position(fixture.text, "doubleValue(3)", 1),
-        });
-      } catch (error) {
-        if (injectedDuringAttempt) forcedError = error;
-        // Readiness can cross a document synchronization boundary. Retire
-        // only that obsolete read; transport and lifecycle failures remain
-        // test failures, and a replacement request must return real content.
-        if (error?.code === "PROJECTION_STALE") return null;
-        throw error;
-      }
-    }, "Java hover after reload");
-    expect(injectedEdits).toBe(1);
-    expect(forcedError?.code).toBe("PROJECTION_STALE");
-    expect(hoverRequests).toBeGreaterThan(1);
-    expect(renewed.state).toBe("running");
-    expect(await service.activeSessionsForEditor(editor)).toContain(renewed);
-    expect(JSON.stringify(result)).toContain("doubleValue");
+    reloadTrace = sessionTrace(
+      lumine.packages.getActivePackage("ide").mainModule.manager,
+      editor,
+      fixture.uri,
+    );
+    try {
+      const previous = await sessionFor(),
+        oldPackage = lumine.packages.getActivePackage("ide-jdtls"),
+        oldMain = oldPackage.mainModule,
+        packagePath = oldPackage.path;
+      await lumine.packages.deactivatePackage("ide-jdtls");
+      await until(() => previous.state === "stopped", "Java teardown");
+      expect(service.adaptersForEditor(editor)).toEqual([]);
+      await lumine.packages.unloadPackage("ide-jdtls");
+      await lumine.packages.loadPackage(packagePath);
+      const current = (await lumine.packages.activatePackage("ide-jdtls")).mainModule;
+      expect(current).not.toBe(oldMain);
+      const renewed = await sessionFor();
+      expect(renewed).not.toBe(previous);
+      // A live editor may change while JDT LS is answering during reactivation.
+      // Keep the real request and force that boundary so stale replies cannot be
+      // mistaken for a failed restart or accepted with outdated coordinates.
+      const request = renewed.connection.request.bind(renewed.connection);
+      let hoverRequests = 0,
+        injectedEdits = 0,
+        injectedDuringAttempt = false,
+        forcedError;
+      spyOn(renewed.connection, "request").and.callFake((method, ...args) => {
+        const response = request(method, ...args);
+        if (method === "textDocument/hover" && ++hoverRequests === 1) {
+          injectedEdits++;
+          injectedDuringAttempt = true;
+          editor.setText(editor.getText() + "\n");
+        }
+        return response;
+      });
+      const result = await until(async () => {
+        injectedDuringAttempt = false;
+        reloadTrace.record("hover.begin", { session: reloadTrace.sessionState(renewed) });
+        try {
+          const response = await renewed.request("textDocument/hover", {
+            textDocument: { uri: fixture.uri },
+            position: position(fixture.text, "doubleValue(3)", 1),
+          });
+          reloadTrace.record("hover.result", { session: reloadTrace.sessionState(renewed) });
+          return response;
+        } catch (error) {
+          reloadTrace.record("hover.error", {
+            error: error.message,
+            code: error.code,
+            session: reloadTrace.sessionState(renewed),
+          });
+          if (injectedDuringAttempt) forcedError = error;
+          // Readiness can cross a document synchronization boundary. Retire
+          // only that obsolete read; transport and lifecycle failures remain
+          // test failures, and a replacement request must return real content.
+          if (error?.code === "PROJECTION_STALE") return null;
+          throw error;
+        }
+      }, "Java hover after reload");
+      expect(injectedEdits).toBe(1);
+      expect(forcedError?.code).toBe("PROJECTION_STALE");
+      expect(hoverRequests).toBeGreaterThan(1);
+      expect(renewed.state).toBe("running");
+      expect(await service.activeSessionsForEditor(editor)).toContain(renewed);
+      expect(JSON.stringify(result)).toContain("doubleValue");
+    } catch (error) {
+      reloadTrace.report(error);
+      throw error;
+    } finally {
+      reloadTrace.dispose();
+    }
   });
 });
