@@ -35,9 +35,13 @@ jobs:
       - run: npm pack --dry-run
 
   integration:
-    name: Real JDT LS and Lumine integration
+    name: Real JDT LS and Lumine integration (Java ${{ matrix.java }})
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ["21.0.13+9", "27.0.0+35"]
     env:
       LUMINE_JASMINE_REPORTER: list
       LUMINE_TEST_PACKAGES: ide language-java
@@ -67,7 +71,7 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: "21.0.13+9"
+          java-version: ${{ matrix.java }}
       - name: Install the exact checksum-verified JDT LS milestone
         run: |
           mkdir "$GITHUB_WORKSPACE/jdtls"
