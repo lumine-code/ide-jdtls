@@ -41,7 +41,7 @@ jobs:
     env:
       LUMINE_JASMINE_REPORTER: list
       LUMINE_TEST_PACKAGES: ide language-java
-      JDTLS_VERSION: 1.61.0
+      JDTLS_VERSION: 1.63.0
       REQUIRE_JDTLS: 1
     steps:
       - uses: actions/checkout@v7
@@ -67,12 +67,12 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: "21.0.12.1"
+          java-version: "21.0.13+9"
       - name: Install the exact checksum-verified JDT LS milestone
         run: |
           mkdir "$GITHUB_WORKSPACE/jdtls"
-          curl --fail --location --retry 3 --output jdtls.tar.gz https://download.eclipse.org/jdtls/milestones/1.61.0/jdt-language-server-1.61.0-202609031315.tar.gz
-          echo "338e7e73d61836651ba2453919a0d34fa763eb4e7c03342092309bffb8934c64  jdtls.tar.gz" | sha256sum --check
+          curl --fail --location --retry 3 --output jdtls.tar.gz https://download.eclipse.org/jdtls/milestones/1.63.0/jdt-language-server-1.63.0-202610191322.tar.gz
+          echo "b1f2abe0b3cccb462cf64fb4a5587c7d09df60cf8be7748b152cbd89d018bdc4  jdtls.tar.gz" | sha256sum --check
           tar -xzf jdtls.tar.gz -C "$GITHUB_WORKSPACE/jdtls"
           echo "JDTLS_HOME=$GITHUB_WORKSPACE/jdtls" >> "$GITHUB_ENV"
       - name: Install Linux build dependencies

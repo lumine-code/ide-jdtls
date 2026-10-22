@@ -69,7 +69,7 @@ liveSuite("ide-jdtls real JDT LS protocol", () => {
     });
     try {
       const record = await managed.install("ide-jdtls", {
-        version: process.env.JDTLS_VERSION || "1.61.0",
+        version: process.env.JDTLS_VERSION || "1.63.0",
       });
       expect(record.checksum).toMatch(/^sha256:[0-9a-f]{64}$/);
       const installed = managed.installFor(adapter);
