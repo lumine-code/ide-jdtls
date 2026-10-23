@@ -34,7 +34,7 @@ describe("ide-jdtls server discovery and installation", () => {
     removeProject(fixture.rootPath);
   });
   it("requires a supported runtime and validates explicit selections before switching", async () => {
-    spyOn(server, "javaMajorVersion").and.resolveTo(21);
+    spyOn(server, "javaMajorVersion").and.resolveTo(25);
     expect(
       (await server.resolveJava(resolutionContext(), process.execPath, { PATH: "" }))?.path ?? null,
     ).toBe(process.execPath);
@@ -45,11 +45,23 @@ describe("ide-jdtls server discovery and installation", () => {
     server.javaMajorVersion.and.resolveTo(17);
     await expectAsync(
       server.resolveJava(resolutionContext(), process.execPath),
-    ).toBeRejectedWithError(/Java 21/);
+    ).toBeRejectedWithError(/Java 25/);
     expect(
       (await server.resolveJava(resolutionContext(), "", { PATH: "" }))?.path ?? null,
     ).toBeNull();
   });
+  for (const major of [21, 24])
+    it(`rejects Java ${major} before starting JDT LS`, async () => {
+      spyOn(server, "javaMajorVersion").and.resolveTo(major);
+      await expectAsync(server.validateJava(process.execPath)).toBeRejectedWithError(
+        `Eclipse JDT LS requires Java 25 or newer; found Java ${major}.`,
+      );
+    });
+  for (const major of [25, 27])
+    it(`accepts Java ${major} for JDT LS`, async () => {
+      spyOn(server, "javaMajorVersion").and.resolveTo(major);
+      expect(await server.validateJava(process.execPath)).toEqual({ major });
+    });
   it("finds native PATH files and skips directories", () => {
     expect(
       findOnPath(path.basename(process.execPath, path.extname(process.execPath)), {
@@ -68,7 +80,7 @@ describe("ide-jdtls server discovery and installation", () => {
       fs.copyFileSync(process.execPath, path.join(directory, name));
     }
     spyOn(server, "javaMajorVersion").and.callFake(async (command) =>
-      command.startsWith(oldDirectory) ? 17 : 21,
+      command.startsWith(oldDirectory) ? 24 : 25,
     );
     expect(
       (

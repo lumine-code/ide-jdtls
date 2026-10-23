@@ -67,7 +67,7 @@
     },
     "javaPath": {
       "title": "Java Path",
-      "description": "Absolute path to a Java 21 or newer java executable. Leave empty to use JDK_HOME, JAVA_HOME, then PATH. Project build runtimes stay controlled by the project.",
+      "description": "Absolute path to a Java 25 or newer java executable. Leave empty to use JDK_HOME, JAVA_HOME, then PATH. Project build runtimes stay controlled by the project.",
       "type": "string",
       "default": ""
     },

@@ -41,7 +41,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: ["21.0.13+9", "27.0.0+35"]
+        java: ["25.0.5+8", "27.0.0+35"]
     env:
       LUMINE_JASMINE_REPORTER: list
       LUMINE_TEST_PACKAGES: ide language-java
